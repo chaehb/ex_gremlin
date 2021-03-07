@@ -3,9 +3,9 @@ defmodule ExGremlin.Gremlin do
 		quote do
 			defstruct [:var, :args, :opts]
 			
-			def new(arg), do: %__MODULE__{arg: arg}
-			def new(var,arg), do: %__MODULE__{var: var, arg: arg}
-			def new(var,arg,opts), do: %__MODULE__{var: var, arg: arg, opts: opts}
+			def new(arg), do: %__MODULE__{args: arg}
+			def new(var,arg), do: %__MODULE__{var: var, args: arg}
+			def new(var,arg,opts), do: %__MODULE__{var: var, args: arg, opts: opts}
 
 			def get_property_key(%{var: var, args: key}) do
 				"""

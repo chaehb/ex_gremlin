@@ -195,6 +195,18 @@ defmodule ExGremlin.Janusgraph do
 		mgmt.rollback();
 		"""
 	end
+
+	def re_index(:janusgraph, index, property) do
+		"""
+		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.REGISTERED).call();
+		mgmt.graph.openManagement();
+		mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType('#{property}'),'#{index}'),#{_schema_action(:reindex)});
+		m.commit();
+		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.ENABLED).call()
+		graph.tx().rollback();
+		"""
+	end
+
 	def re_index(:map_reduce, index) do
 		"""
 		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.REGISTERED).call();
@@ -208,17 +220,6 @@ defmodule ExGremlin.Janusgraph do
 		mgmt = graph.openManagement();
 		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.ENABLED).call();
 		mgmt.rollback();
-		"""
-	end
-
-	def re_index(:janusgraph, index, property) do
-		"""
-		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.REGISTERED).call();
-		mgmt.graph.openManagement();
-		mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType('#{property}'),'#{index}'),#{_schema_action(:reindex)});
-		m.commit();
-		ManagementSystem.awaitGraphIndexStatus(graph, '#{index}').status(SchemaStatus.ENABLED).call()
-		graph.tx().rollback();
 		"""
 	end
 
@@ -250,22 +251,7 @@ defmodule ExGremlin.Janusgraph do
 		future.get();
 		"""
 	end
-	def delete_index(:map_reduce, index) do
-		"""
-		mgmt = graph.openManagement();
-		idx = mgmt.getGraphIndex('#{index}');
-		mgmt.updateIndex(idx,#{_schema_action(:disabled)}).get();
-		mgmt.commit();
-		graph.tx().commit();
-		ManagementSystem.awaitGraphIndexStatus(graph,'#{index}').status(#{_schema_status(:disabled)}).call();
-		mrd = new MapReduceIndexManagement(graph);
-		future = mrd.updateIndex(mgmt.getGraphIndex('#{index}'),#{_schema_action(:removed)});
-		mgmt.commit();
-		graph.tx().commit();
-		future.get();
-		"""
-	end
-	# for property index
+
 	def delete_index(:janusgraph, index, property) do
 		"""
 		mgmt = graph.openManagement();
@@ -276,6 +262,22 @@ defmodule ExGremlin.Janusgraph do
 		ManagementSystem.awaitGraphIndexStatus(graph,'#{index}').status(#{_schema_status(:disabled)}).call();
 		mgmt = graph.openManagement();
 		future = mgmt.updateIndex(mgmt.getRelationIndex(mgmt.getRelationType('#{property}'),'#{index}'),#{_schema_action(:remove)});
+		mgmt.commit();
+		graph.tx().commit();
+		future.get();
+		"""
+	end
+
+	def delete_index(:map_reduce, index) do
+		"""
+		mgmt = graph.openManagement();
+		idx = mgmt.getGraphIndex('#{index}');
+		mgmt.updateIndex(idx,#{_schema_action(:disabled)}).get();
+		mgmt.commit();
+		graph.tx().commit();
+		ManagementSystem.awaitGraphIndexStatus(graph,'#{index}').status(#{_schema_status(:disabled)}).call();
+		mrd = new MapReduceIndexManagement(graph);
+		future = mrd.updateIndex(mgmt.getGraphIndex('#{index}'),#{_schema_action(:removed)});
 		mgmt.commit();
 		graph.tx().commit();
 		future.get();

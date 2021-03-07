@@ -83,12 +83,12 @@ defmodule ExGremlin.Client do
 	@impl GenServer
 	@spec handle_continue(:connect,%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: {:noreply, state}
 	def handle_continue(:connect, args) do
-		connState = connect(state)
-
-		if state.ping_delay > 0 do
-			Process.send_after(self(), :ping, state.ping_delay)
+		connState = connect(args)
+		ping_delay = Map.get(args,:ping_delay, 0)
+		if ping_delay > 0 do
+			Process.send_after(self(), :ping, ping_delay)
 		end
-		{:noreply, %{connState | ping_delay: state.ping_delay}}
+		{:noreply, %{connState | ping_delay: ping_delay}}
 	end
 ###################
 ### handle_cast ###
@@ -99,7 +99,7 @@ defmodule ExGremlin.Client do
 ###################
 
 	@impl GenServer
-	@spec handle_call({:query, String.t(), number() | :infinity}, _ , state) :: {:noreply, state, :infinity}
+	@spec handle_call({:query, String.t(), number() | :infinity}, {pid(), tag :: term()} , state) :: {:noreply, state, :infinity}
 	def handle_call({:query, query, timeout}, from, state) do
 		timer = Process.send_after(self(),:query_timeout, timeout)
 
@@ -181,7 +181,7 @@ defmodule ExGremlin.Client do
 		end
 	end
 
-	@spec upgrade_socket() :: state | no_return
+	@spec upgrade_socket(pid(),String.t(),List.t()) :: state | no_return
 	defp upgrade_socket(pid, path, headers \\ []) do
 		streamRef = :gun.ws_upgrade(pid, path, headers)
 		receive do
