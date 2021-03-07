@@ -1,5 +1,7 @@
 defmodule ExGremlin.Client do
-	@moduledoc false
+	@moduledoc """
+	Gremlin Websocket Client by Gun.
+	"""
 
 	use GenServer, restart: :temporary
 
@@ -39,14 +41,20 @@ defmodule ExGremlin.Client do
 ###==========================================================================###
 ### Public API                                                               ###
 ###==========================================================================###
+	@doc """
+	Accepts a graph or a raw string query which it converts into a query and queries the gremlin database.
 
-  	@spec query(ExGremlin.Graph.t() | String.t(), number()) :: response
+	Params:
+	* query - A 'ExGremlin.Graph.t' or raw string query
+	* timeout (Default: 5000ms) - Timeout in milliseconds to pass to GenServer
+	"""
+  @spec query(ExGremlin.Graph.t() | String.t(), number() | :infinity ) :: response
 	def query(query, timeout \\ 5000) do
 		payload =
 			query
 			|> Request.new()
 			|> Jason.encode!()
-		Logger.debug("#{inspect payload}")
+
 		PoolManager.transaction(fn worker_pid -> 
 			GenServer.call(worker_pid, {:query, payload, timeout},:infinity)
 		end)
@@ -55,7 +63,8 @@ defmodule ExGremlin.Client do
 ###==========================================================================###
 ### API                                                                      ###
 ###==========================================================================###
-  	@spec start_link(%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: state
+  
+  @spec start_link(%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: pid()
 	def start_link(%{host: _host, port: _port, path: _path, secure: _secure} = args) do
 		GenServer.start_link(__MODULE__, args, [])
 	end
@@ -67,13 +76,13 @@ defmodule ExGremlin.Client do
 ###==========================================================================###
 
 	@impl GenServer
-	@spec init(args :: map()) :: {:ok, state}
 	def init(args) do
 		{:ok, args,{:continue,:connect}}
 	end
 
 	@impl GenServer
-	def handle_continue(:connect, state) do
+	@spec handle_continue(:connect,%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: {:noreply, state}
+	def handle_continue(:connect, args) do
 		connState = connect(state)
 
 		if state.ping_delay > 0 do
@@ -90,6 +99,7 @@ defmodule ExGremlin.Client do
 ###################
 
 	@impl GenServer
+	@spec handle_call({:query, String.t(), number() | :infinity}, _ , state) :: {:noreply, state, :infinity}
 	def handle_call({:query, query, timeout}, from, state) do
 		timer = Process.send_after(self(),:query_timeout, timeout)
 
@@ -154,7 +164,7 @@ defmodule ExGremlin.Client do
 ### Private Functions                                                        ###
 ###==========================================================================###
 
-  	@spec connect(%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: pid()
+  @spec connect(%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: state | no_return
 	defp connect(%{host: host, port: port, path: path, secure: secure}) do
 		openOptions = 
 			if secure do
@@ -171,6 +181,7 @@ defmodule ExGremlin.Client do
 		end
 	end
 
+	@spec upgrade_socket() :: state | no_return
 	defp upgrade_socket(pid, path, headers \\ []) do
 		streamRef = :gun.ws_upgrade(pid, path, headers)
 		receive do
@@ -192,25 +203,4 @@ defmodule ExGremlin.Client do
 		  exit({:shutdown, :timeout})
 		end
 	end
-
-	# defp request(pid,stream_ref, query, timeout) do
-	# 	:gun.ws_send(pid, stream_ref,{:binary, <<16, "application/json" <> query>>})
-	# 	receive do
-	# 	  {:gun_ws, ^pid, _stream_ref, {:text, data}} ->
-	# 	    {:ok, data}
-	# 	  {:gun_ws, ^pid, _stream_ref, {:binary, data}} ->
-	# 	    {:ok, data}
-	# 	  {:gun_error, ^pid, _streamRef, reason} ->
-	# 	    Logger.debug("[ExGremlin.Client] websocket error : #{inspect reason}")
-	# 	    {:error, reason}
-	# 	  err ->
-	# 	    Logger.debug("[ExGremlin.Client] websocket error other : #{inspect err}")
-	# 	    {:error, err}
-	# 	  # More clauses here as needed.
-	# 	after timeout ->
-	# 	  Logger.debug("[ExGremlin.Client] websocket error : timeout")
-	# 	  {:error, :timeout}
-	# 	end
-	# end
-
 end

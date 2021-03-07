@@ -1,58 +1,84 @@
 defmodule ExGremlin.Gremlin do
 	defmacro __using__(_opts) do
 		quote do
-			defstruct [:arg]
+			defstruct [:var, :args, :opts]
 			
 			def new(arg), do: %__MODULE__{arg: arg}
+			def new(var,arg), do: %__MODULE__{var: var, arg: arg}
+			def new(var,arg,opts), do: %__MODULE__{var: var, arg: arg, opts: opts}
 
-			def get_property_key({var, key}) do
+			def get_property_key(%{var: var, args: key}) do
 				"""
 				#{var} = mgmt.getPropertyKey('#{key}');
 				"""
 			end
 
-			def make_property_key({var,key,data_type,cardinality}) do
-				"""
-				#{var} = mgmt.getPropertyKey('#{key}').dataType(#{_data_type(data_type)}).cardinality(#{_cardinality(cardinality)}).make();
-				"""
-			end
-			def make_property_key({key,data_type,cardinality}) do
+			def make_property_key(%{var: nil, args: key, opts: {data_type, cardinality}}) do
 				"""
 				mgmt.getPropertyKey('#{key}').dataType(#{_data_type(data_type)}).cardinality(#{_cardinality(cardinality)}).make();
 				"""
 			end
+			def make_property_key(%{var: var, args: key, opts: {data_type, cardinality}}) do
+				"""
+				#{var} = mgmt.getPropertyKey('#{key}').dataType(#{_data_type(data_type)}).cardinality(#{_cardinality(cardinality)}).make();
+				"""
+			end
 			#---------- vertex management
-			def get_vertex_label({var,label}) do
+			def get_vertex_label(%{var: var, args: label}) do
 				"""
 				#{var} = mgmt.getVertexLabel('#{label}');
 				"""
 			end
 
-			def make_vertex_label({var,label}) do
+			def make_vertex_label(%{var: nil, args: label, opts: :static})do
 				"""
-				#{var} = mgmt.makeVertexLabel('#{label}').make();
+				mgmt.makeVertexLabel('#{label}').setStatic().make();
 				"""
 			end
-			def make_vertex_label(label) when is_bitstring(label) do
+			def make_vertex_label(%{var: nil, args: label})do
 				"""
 				mgmt.makeVertexLabel('#{label}').make();
 				"""
 			end
+			def make_vertex_label(%{var: var, args: label, opts: :static}) do
+				"""
+				#{var} = mgmt.makeVertexLabel('#{label}').setStatic().make();
+				"""
+			end
+			def make_vertex_label(%{var: var, args: label}) do
+				"""
+				#{var} = mgmt.makeVertexLabel('#{label}').make();
+				"""
+			end
 
 			#---------- edge management
-			def get_edge_label({var, label}) do
+			def get_edge_label(%{var: var, args: label}) do
 				"""
 				#{var} = mgmt.getEdgeLabel('#{label}');
 				"""
 			end
-			def make_edge_label({var, label,multiplicity}) do
+
+			def make_edge_label(%{var: nil, args: label, opts: {multiplicity, :undirected}}) do
 				"""
-				#{var} = mgmt.makeEdgeLabel('#{label}').multiplicity(#{_multiplicity(multiplicity)}).make()
+				mgmt.makeEdgeLabel('#{label}').multiplicity(#{_multiplicity(multiplicity)}).unidirected().make()
 				"""
 			end
-			def make_edge_label({label,multiplicity}) do
+
+			def make_edge_label(%{var: nil, args: label, opts: multiplicity}) do
 				"""
 				mgmt.makeEdgeLabel('#{label}').multiplicity(#{_multiplicity(multiplicity)}).make()
+				"""
+			end
+
+			def make_edge_label(%{var: var, args: label, opts: {multiplicity, :undirected}}) do
+				"""
+				#{var} = mgmt.makeEdgeLabel('#{label}').multiplicity(#{_multiplicity(multiplicity)}).unidirected().make()
+				"""
+			end
+
+			def make_edge_label(%{var: var, args: label, opts: multiplicity}) do
+				"""
+				#{var} = mgmt.makeEdgeLabel('#{label}').multiplicity(#{_multiplicity(multiplicity)}).make()
 				"""
 			end
 
@@ -125,22 +151,22 @@ defmodule ExGremlin.Gremlin do
 
 			defimpl ExGremlin.Mgmt.Query do
 				def get_property_key(data) do
-					@for.get_property_key(data.arg)
+					@for.get_property_key(data)
 				end
 				def make_property_key(data) do
-					@for.make_property_key(data.arg)
+					@for.make_property_key(data)
 				end
 				def get_vertex_label(data) do
-					@for.get_vertex_label(data.arg)
+					@for.get_vertex_label(data)
 				end
 				def make_vertex_label(data) do
-					@for.make_vertex_label(data.arg)
+					@for.make_vertex_label(data)
 				end
 				def get_edge_label(data) do
-					@for.get_edge_label(data.arg)
+					@for.get_edge_label(data)
 				end
 				def make_edge_label(data) do
-					@for.make_edge_label(data.arg)
+					@for.make_edge_label(data)
 				end
 			end 
 		end

@@ -1,6 +1,3 @@
 defmodule ExGremlin do
-  @moduledoc """
-  Documentation for `ExGremlin`.
-  """
-
+  @moduledoc false
 end
