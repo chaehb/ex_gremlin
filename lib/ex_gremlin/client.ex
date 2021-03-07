@@ -18,15 +18,15 @@ defmodule ExGremlin.Client do
 		ping_delay: 0
 	}
 
-  	@type response ::
-			{:ok, list()}
-			| {:error, :unauthorized, String.t()}
-			| {:error, :malformed_request, String.t()}
-			| {:error, :invalid_request_arguments, String.t()}
-			| {:error, :server_error, String.t()}
-			| {:error, :script_evaluation_error, String.t()}
-			| {:error, :server_timeout, String.t()}
-			| {:error, :server_serialization_error, String.t()}
+	@type response ::
+		{:ok, list()}
+		| {:error, :unauthorized, String.t()}
+		| {:error, :malformed_request, String.t()}
+		| {:error, :invalid_request_arguments, String.t()}
+		| {:error, :server_error, String.t()}
+		| {:error, :script_evaluation_error, String.t()}
+		| {:error, :server_timeout, String.t()}
+		| {:error, :server_serialization_error, String.t()}
 
 	@open_options %{
 		connect_timeout: 60_000,

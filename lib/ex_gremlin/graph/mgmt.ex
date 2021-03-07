@@ -4,12 +4,25 @@ defmodule ExGremlin.Mgmt do
   alias :queue, as: Queue
 
   @type t :: {[], []}
+  
+  @type response :: ExGremlin.Client.response
 
+  @doc """
+  Accepts a mgmt or a raw string query which it converts into a query and queries the gremlin database.
+
+  Params:
+  * query - A 'ExGremlin.Gremlin.t' or raw string query
+  * timeout (Default: 5000ms) - Timeout in milliseconds to pass to GenServer
+  """
+  @spec query(ExGremlin.Mgmt.t | String.t(), number() | :infinity ) :: response
+  def query(query, timeout \\ 5000) do
+    encode(query)
+    |> ExGremlin.Client.query(timeout)
+  end
   @doc """
   Start of graph management. All operations are stored in a queue.
   """
-
-  @spec new :: ExGremlin.Mgmt.t()
+   @spec new :: ExGremlin.Mgmt.t()
   def new, do: Queue.new()
 
   def open_management(management) do
@@ -42,7 +55,10 @@ defmodule ExGremlin.Mgmt do
   @doc """
   Compiles a graph into the Gremlin query.
   """
-  @spec encode(ExGremlin.Management.t()) :: String.t()
+  @spec encode(ExGremlin.Mgmt.t() | String.t()) :: String.t()
+  def encode(management) when is_bitstring(management) do
+    management
+  end
   def encode(management) do
     encode(management, "")
   end
@@ -55,12 +71,6 @@ defmodule ExGremlin.Mgmt do
     # encode(remainder, acc <> escape(query))
     encode(remainder, acc <> query)
   end
-
-  # @spec escape(String.t()) :: String.t()
-  # defp escape(str) do
-  #   # We escape single quote if it is not already escaped by an odd number of backslashes
-  #   String.replace(str, ~r/((\A|[^\\])(\\\\)*)'/, "\\1\\'")
-  # end
 
   defp _open_management() do
 	"""
