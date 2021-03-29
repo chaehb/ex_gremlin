@@ -1,6 +1,6 @@
 # ExGremlin
 
 ## Current State
-(O) Basic Implementations
-(-) Optimizing for Janusgraph
-(X) Mix Commands
+- [x] Basic Implementations
+- [ ] Optimizing for Janusgraph
+- [ ] Mix Commands
