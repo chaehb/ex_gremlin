@@ -15,21 +15,21 @@ defmodule ExGremlin.Mgmt do
   * timeout (Default: 5000ms) - Timeout in milliseconds to pass to GenServer
   """
   @spec query(ExGremlin.Mgmt.t | String.t(), number() | :infinity ) :: response
-  def query(query, timeout \\ 5000) do
+  def query(query, _timeout \\ 5000) do
     encode(query)
-    |> ExGremlin.Client.query(timeout)
+    # |> ExGremlin.Client.query(timeout)
   end
   @doc """
   Start of graph management. All operations are stored in a queue.
   """
-   @spec new :: ExGremlin.Mgmt.t()
-  def new, do: Queue.new()
+  @spec mgmt :: ExGremlin.Mgmt.t()
+  def mgmt, do: Queue.new()
 
   def open_management(management) do
     Queue.in(_open_management(),management)
   end
   def open_management() do
-    Queue.in(_open_management(),new())
+    Queue.in(_open_management(),mgmt())
   end
 
   def add_query(management, query) do
@@ -74,30 +74,30 @@ defmodule ExGremlin.Mgmt do
 
   defp _open_management() do
 	"""
-	mgmt = graph.openManagement();
+	mgmt = graph.openManagement()
 	"""  	
   end
 		
 	def _commit() do
 		"""
-		mgmt.commit();
+		mgmt.commit()
 		"""
 	end
 
 	def _rollback() do
 		"""
-		mgmt.rollback();
+		mgmt.rollback()
 		"""
 	end
 
 	def _graph_tx_commit() do
 		"""
-		graph.tx().commit();
+		graph.tx().commit()
 		"""
 	end
 	def _commit_all_open_transactions() do
 		"""
-		cmot_size = graph.getOpenTransactions().size;
+		cmot_size = graph.getOpenTransactions().size
 		if(cmot_size > 0){
 			for(i = 0; i < cm_size; i++){
 				graph.getOpenTransactions().getAt(0).commit();
@@ -116,26 +116,53 @@ defmodule ExGremlin.Mgmt do
 		"""			
 	end
 
+  # def has_schema?(vertex_label,timeout \\ 5_000) do
+  #   "graph.containsVertexLabel('#{vertex_label}')"
+  #   |> ExGremlin.Client.query(timeout)
+  #   |> (fn(result)-> 
+  #     case result do
+  #       {:ok,[result]} -> 
+  #         result
+  #       _ -> true
+  #     end
+  #   end).()
+  # end
+
+  def has_schema?(timeout \\ 5_000) do
+    """
+    mgmt=graph.openManagement()
+    mgmt.getVertexLabels()
+    """
+    |> ExGremlin.Client.query(timeout)
+    |> (fn(result)-> 
+      case result do
+        {:ok,[]} -> 
+          false
+        _ -> true
+      end
+    end).()
+  end
+
   defprotocol Query do
 
     #------------ property key manamgement
-    @spec get_property_key(MgmtQuery.t()) :: String.t()
+    @spec get_property_key(Gremlin.Mgmt.Query.t()) :: String.t()
     def get_property_key(key_info)
 
-    @spec make_property_key(MgmtQuery.t()) :: String.t()
+    @spec make_property_key(Gremlin.Mgmt.Query.t()) :: String.t()
     def make_property_key(key_info)
 
     #------------ vertex management
-    @spec get_vertex_label(MgmtQuery.t()) :: String.t()
+    @spec get_vertex_label(Gremlin.Mgmt.Query.t()) :: String.t()
     def get_vertex_label(vertex_info)
 
-    @spec make_vertex_label(MgmtQuery.t()) :: String.t()
+    @spec make_vertex_label(Gremlin.Mgmt.Query.t()) :: String.t()
     def make_vertex_label(vertex_info)
     #------------ edge management
-    @spec get_edge_label(MgmtQuery.t()) :: String.t()
+    @spec get_edge_label(Gremlin.Mgmt.Query.t()) :: String.t()
     def get_edge_label(edge_info)
 
-    @spec make_edge_label(MgmtQuery.t()) :: String.t()
+    @spec make_edge_label(Gremlin.Mgmt.Query.t()) :: String.t()
     def make_edge_label(edge_info)
 
   end

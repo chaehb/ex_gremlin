@@ -15,7 +15,13 @@ defmodule ExGremlin.Client do
 		stream_ref: :gun.stream_ref(), 
 		from: {pid(), tag :: term()},
 		timer_ref: reference(),
-		ping_delay: 0
+		# pinging
+		ping_delay: integer(),
+		# server info
+		host: String.t(),
+		port: integer(),
+		path: String.t(),
+		secure: boolean()
 	}
 
 	@type response ::
@@ -35,7 +41,7 @@ defmodule ExGremlin.Client do
 	}
 
 	defmodule State do
-		defstruct [:pid, :stream_ref, :from, :timer_ref, :ping_delay]
+		defstruct [:pid, :stream_ref, :from, :timer_ref, :ping_delay, :host,:port,:path,:secure ]
 	end
 
 ###==========================================================================###
@@ -88,6 +94,7 @@ defmodule ExGremlin.Client do
 		if ping_delay > 0 do
 			Process.send_after(self(), :ping, ping_delay)
 		end
+
 		{:noreply, %{connState | ping_delay: ping_delay}}
 	end
 ###################
@@ -139,12 +146,31 @@ defmodule ExGremlin.Client do
 		{:noreply, %{state | from: nil, timer_ref: nil}}
 	end
 
+	# @impl GenServer
+	# def handle_info({:gun_down,_pid,:ws,{:error,:etimeout},[]}, state) do
+	# 	# Process.send(self(),:reconnect,[])
+	# 	{:noreply, state}
+	# end
+
+	@impl GenServer
+	def handle_info({:gun_down,_pid,:ws,{:error,:enetdown},[]}, state) do
+		Logger.debug("Pooler.Connection[handle_info][:enetdown] : reconnect")
+		Process.send(self(),:reconnect,[])
+		{:noreply, state}
+	end
+
 	@impl GenServer
 	def handle_info(:query_timeout, %{from: from} = state) do
 		:gun.flush(state.pid)
 
 		GenServer.reply(from, {:error, {:server_timeout, "query timeout"}})
 		{:noreply, %{state | from: nil, timer_ref: nil}}
+	end
+
+	@impl GenServer
+	def handle_info(:reconnect, state) do
+		connState = connect(%{host: state.host, port: state.port, path: state.path,secure: state.secure})
+		{:noreply, %{connState | ping_delay: state.ping_delay}}
 	end
 
 	@impl GenServer
@@ -164,7 +190,7 @@ defmodule ExGremlin.Client do
 ### Private Functions                                                        ###
 ###==========================================================================###
 
-  @spec connect(%{host: String.t(), port: number(), path: String.t(), secure: boolean()}) :: state | no_return
+  @spec connect(%{host: String.t(), port: integer(), path: String.t(), secure: boolean()}) :: state | no_return
 	defp connect(%{host: host, port: port, path: path, secure: secure}) do
 		openOptions = 
 			if secure do
@@ -175,7 +201,8 @@ defmodule ExGremlin.Client do
 		{:ok, pid} = :gun.open(String.to_charlist(host), port, openOptions)
 		case :gun.await_up(pid) do
 			{:ok, _protocol} ->
-				upgrade_socket(pid, path)
+				state = upgrade_socket(pid, path)
+				%{state | host: host, port: port, path: path, secure: secure }
 			{:error, _error} ->
 				exit({:shutdown, :connect_error})
 		end
