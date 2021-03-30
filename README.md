@@ -8,12 +8,12 @@
 - [ ] Mix Commands
 
 ### Rewrite from [gremlex](https://github.com/Revmaker/gremlex)
-- Reuse the main architecture of gremlex
+- Reuse the main architecture and the main concept of gremlex
 - change some library usages from gremlex
 	- remove
-		- [poolboy](https://github.com/devinus/poolboy) => write own client pool
+		- [poolboy](https://github.com/devinus/poolboy) => write own client pool modules
 		- [confex](https://github.com/Nebo15/confex) => not use
 		- [httpoison](https://github.com/edgurgel/httpoison) => not use
-	- [elixir-socket](https://github.com/meh/elixir-socket) to [gun](https://github.com/ninenines/gun)
-	- [poison](https://github.com/devinus/poison) to [jason](https://github.com/michalmuskala/jason)
-	- [uuid v1.1 (rename elixir-uuid after v1.2)](https://github.com/zyro/elixir-uuid) to [uuid_erl](https://github.com/okeuday/uuid)
+	- [elixir-socket](https://github.com/meh/elixir-socket) => [gun (v2.0.0-rc.1)](https://github.com/ninenines/gun)
+	- [poison](https://github.com/devinus/poison) => [jason](https://github.com/michalmuskala/jason)
+	- [uuid(v1.1, rename elixir-uuid after v1.2)](https://github.com/zyro/elixir-uuid) => [uuid_erl](https://github.com/okeuday/uuid)
