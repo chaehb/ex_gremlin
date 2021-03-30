@@ -17,6 +17,7 @@ defmodule ExGremlin.Client do
 		timer_ref: reference(),
 		# pinging
 		ping_delay: integer(),
+		ping_timer: reference(),
 		# server info
 		host: String.t(),
 		port: integer(),
@@ -41,7 +42,7 @@ defmodule ExGremlin.Client do
 	}
 
 	defmodule State do
-		defstruct [:pid, :stream_ref, :from, :timer_ref, :ping_delay, :host,:port,:path,:secure ]
+		defstruct [:pid, :stream_ref, :from, :timer_ref, :ping_delay, :ping_timer, :host,:port,:path,:secure ]
 	end
 
 ###==========================================================================###
@@ -91,11 +92,14 @@ defmodule ExGremlin.Client do
 	def handle_continue(:connect, args) do
 		connState = connect(args)
 		ping_delay = Map.get(args,:ping_delay, 0)
-		if ping_delay > 0 do
-			Process.send_after(self(), :ping, ping_delay)
-		end
+		ping_timer = 
+			if ping_delay > 0 do
+				Process.send_after(self(), :ping, ping_delay)
+			else
+				nil
+			end
 
-		{:noreply, %{connState | ping_delay: ping_delay}}
+		{:noreply, %{connState | ping_delay: ping_delay, ping_timer: ping_timer}}
 	end
 ###################
 ### handle_cast ###
@@ -152,11 +156,29 @@ defmodule ExGremlin.Client do
 	# 	{:noreply, state}
 	# end
 
+	# @impl GenServer
+	# def handle_info({:gun_down,_pid,:ws,{:error,:etimeout},[]}, state) do
+	# 	Logger.debug("Pooler.Connection[handle_info][:etimeout] : reconnect")
+	# 	Process.send(self(),:reconnect,[])
+	# 	{:noreply, state}
+	# end
+
+	# @impl GenServer
+	# def handle_info({:gun_down,_pid,:ws,{:error,:enetdown},[]}, state) do
+	# 	Logger.debug("Pooler.Connection[handle_info][:enetdown] : reconnect")
+	# 	Process.send(self(),:reconnect,[])
+	# 	{:noreply, state}
+	# end
+
 	@impl GenServer
-	def handle_info({:gun_down,_pid,:ws,{:error,:enetdown},[]}, state) do
-		Logger.debug("Pooler.Connection[handle_info][:enetdown] : reconnect")
+	def handle_info({:gun_down,_pid,:ws,:closed,[]}, state) do
+		Logger.debug("Pooler.Connection[handle_info][:closed] : reconnect")
+
+		if state.ping_delay > 0  and state.ping_timer != nil do
+			Process.cancel_timer(state.ping_timer)
+		end
 		Process.send(self(),:reconnect,[])
-		{:noreply, state}
+		{:noreply, %{state | ping_timer: nil}}
 	end
 
 	@impl GenServer
@@ -170,14 +192,23 @@ defmodule ExGremlin.Client do
 	@impl GenServer
 	def handle_info(:reconnect, state) do
 		connState = connect(%{host: state.host, port: state.port, path: state.path,secure: state.secure})
-		{:noreply, %{connState | ping_delay: state.ping_delay}}
+		ping_timer = 
+			if state.ping_delay > 0 do
+				Process.send_after(self(),:ping, state.ping_delay)
+			else
+				nil
+			end
+		{:noreply, %{connState | ping_delay: state.ping_delay, ping_timer: ping_timer}}
 	end
 
 	@impl GenServer
 	def handle_info(:ping, state) do
-		Process.send_after(self(),:ping, state.ping_delay)
+		ping_timer = 
+			if state.ping_delay > 0 do
+				Process.send_after(self(),:ping, state.ping_delay)
+			end
 		:gun.ws_send(state.pid, state.stream_ref, {:pong, ""})
-		{:noreply, state}
+		{:noreply, %{state| ping_timer: ping_timer}}
 	end
 
 	@impl GenServer

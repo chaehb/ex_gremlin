@@ -138,7 +138,8 @@ defmodule ExGremlin.Mgmt do
       case result do
         {:ok,[]} -> 
           false
-        _ -> true
+        {:ok,_labels} -> true
+        _ -> :error
       end
     end).()
   end
