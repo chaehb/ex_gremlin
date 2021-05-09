@@ -18,4 +18,4 @@
 	- [poison](https://github.com/devinus/poison) => [jason](https://github.com/michalmuskala/jason)
 	- [uuid(v1.1, rename elixir-uuid after v1.2)](https://github.com/zyro/elixir-uuid) => [uuid_erl](https://github.com/okeuday/uuid)
 
-	### [Usages(Wiki)](https://github.com/chaehb/ex_gremlin/wiki)
+	### [Usages(under construction ...)](https://github.com/chaehb/ex_gremlin/wiki)
