@@ -33,7 +33,7 @@ defmodule ExGremlin.MixProject do
       {:gun, "~> 2.0.0-rc.1"},
       {:uuid, "~> 2.0", hex: :uuid_erl},
       {:jason, "~> 1.2"},
-      {:ex_doc, "~> 0.23.0", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.24.2", only: :dev, runtime: false}
     ]
   end
 
