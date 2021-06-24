@@ -1,5 +1,7 @@
 defmodule ExGremlin.Response do
-
+  @moduledoc """
+  originally made by Gremlex  
+  """
   require Logger
 
   # @status_success           200

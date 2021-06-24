@@ -1,4 +1,7 @@
 defmodule ExGremlin.Edge do
+  @moduledoc """
+  originally made by Gremlex
+  """
 	alias ExGremlin.Deserializer
 
   @enforce_keys [:label, :id, :in_vertex, :out_vertex, :properties]

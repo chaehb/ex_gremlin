@@ -1,4 +1,7 @@
 defmodule ExGremlin.VertexProperty do
+  @moduledoc """
+  originally made by Gremlex
+  """
   @type t :: %ExGremlin.VertexProperty{
           label: String.t(),
           id: number(),

@@ -1,6 +1,6 @@
 defmodule ExGremlin.Client do
 	@moduledoc """
-	Gremlin Websocket Client by Gun.
+	Gremlin Websocket Client with Gun.
 	"""
 
 	use GenServer, restart: :temporary

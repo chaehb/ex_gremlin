@@ -1,6 +1,8 @@
 defmodule ExGremlin.Deserializer do
   @moduledoc """
   Deserializer module for deserializing data returned back from Gremlin.
+
+  originally made by Gremlex
   """
   alias ExGremlin.{Edge, Vertex, VertexProperty}
 

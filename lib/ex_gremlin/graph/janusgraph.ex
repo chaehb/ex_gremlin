@@ -1,44 +1,68 @@
 defmodule ExGremlin.Janusgraph do
 	@moduledoc """
-	Graph Management implementation for JanusGraph
+	Management & Query for JanusGraph
 	"""
 	use ExGremlin.Schema
 
+	@type gremlin_query :: String.t()
+	# @type geo_shape :: 
+	# 	:point 
+	# 	| :circle 
+	# 	| :box 
+	# 	| :wkt 
+	# 	| :multi_points
+	# 	| :multi_lines
+	# 	| :multi_polygons
+	# 	| :geometry_collection
+
 #================================================  Geoshape
+	@spec geoshape(:point, {number(),number()}) :: gremlin_query
 	def geoshape(:point, {latitude,longitude}) do
 		"Geoshape.point(#{latitude},#{longitude})"
 	end
+
 	# radius in km
+	@spec geoshape(:circle, {number(),number(),number()}) :: gremlin_query
 	def geoshape(:circle, {latitude,longitude, radius}) do
 		"Geoshape.circle(#{latitude},#{longitude},#{radius})"
 	end
-	# south_east lat,lng , north_west lat,lng
-	def geoshape(:box, {sw_latitude,sw_longitude, ne_latitude, ne_longitude}) do
-		"Geoshape.box(#{sw_latitude}, #{sw_longitude}, #{ne_latitude}, #{ne_longitude})"
+
+	# south_west lat,lng , north_east lat,lng
+	@spec geoshape(:box, {number(),number(),number(),number()}) :: gremlin_query
+	def geoshape(:box, {southwest_latitude,southwest_longitude, northeast_latitude, northeast_longitude}) do
+		"Geoshape.box(#{southwest_latitude}, #{southwest_longitude}, #{northeast_latitude}, #{northeast_longitude})"
 	end
+
 	# well-known text representation of geometry
+	# ex) "POLYGON ((35.4 48.9, 35.6 48.9, 35.6 49.1, 35.4 49.1, 35.4 48.9))"
+	@spec geoshape(:wkt, String.t()) :: gremlin_query
 	def geoshape(:wkt, wkt) do
 		"Geoshape.fromWkt(\"#{wkt}\")"
 	end
 
 	# point : { longitude(X), latitude(Y) }
-	def geoshape(:multi_point, points) do
+	@spec geoshape(:multi_points,list({number(),number()})) :: gremlin_query
+	def geoshape(:multi_points, points) do
 		str = Enum.reduce(points,"",fn {x,y},str -> 
 			str <> ".pointXY(#{x},#{y})"
 		end)
 
 		"Geoshape.geoshape(Geoshape.getShapeFactory().multiPoint()#{str}.build())"
 	end
+
 	# line : {{start_x,start_y}, {end_x,end_y}}
-	def geoshape(:multi_line, lines) do
+	@spec geoshape(:multi_lines,list({{number(),number()},{number(),number()}})) :: gremlin_query
+	def geoshape(:multi_lines, lines) do
 		str = Enum.reduce(lines,"",fn {{sX,sY},{eX,eY}},str -> 
 			str <> ".add(Geoshape.getShapeFactory().lineString().pointXY(#{sX},#{sY}).pointXY(#{eX},#{eY}))"
 		end)
 
 		"Geoshape.geoshape(Geoshape.getShapeFactory().multiLineString()#{str}.build())"
 	end
+
 	# polygon: [{X,Y}]
-	def geoshape(:multi_poligon,polygons) do
+	@spec geoshape(:multi_polygons,list({number(),number()})) :: gremlin_query
+	def geoshape(:multi_polygons,polygons) do
 		str = Enum.reduce(polygons,"",fn polygon,str -> 
 			polygon_str = Enum.reduce(polygon,"",fn {x,y},polygon_str -> 
 				polygon_str <> ".pointXY(#{x},#{y})"
@@ -48,6 +72,12 @@ defmodule ExGremlin.Janusgraph do
 
 		"Geoshape.geoshape(Geoshape.getShapeFactory().multiPolygon()#{str}.build())"
 	end
+
+	@spec geoshape(:geometry_collection,
+		list({number(),number()} 
+		| list({{number(),number()},{number(),number()}}) 
+		| list({number(),number()}))) 
+		:: gremlin_query
 	def geoshape(:geometry_collection, collection) do
 		collection_str = Enum.reduce(collection,"", fn
 			{x,y},collection_str ->

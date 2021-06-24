@@ -1,4 +1,7 @@
 defmodule ExGremlin.Vertex do
+  @moduledoc """
+  originally made by Gremlex  
+  """
   alias ExGremlin.Vertex
   alias ExGremlin.Deserializer
 

@@ -17,6 +17,8 @@ defmodule ExGremlin.Graph do
 
   Note: This module doesn't actually execute any queries, it just allows you to build one.
   For query execution see `ExGremlin.Client.query/1`
+
+  originally made by Gremlex
   """
   alias :queue, as: Queue
 

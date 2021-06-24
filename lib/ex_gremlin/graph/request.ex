@@ -1,5 +1,8 @@
 defmodule ExGremlin.Request do
   # alias ExGremlin.Graph
+  @moduledoc """
+  originally made by Gremlex  
+  """
   @derive [Jason.Encoder]
   @op "eval"
   @processor ""

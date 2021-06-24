@@ -30,7 +30,7 @@ defmodule ExGremlin.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:gun, "~> 2.0.0-rc.1"},
+      {:gun, "~> 2.0.0-rc.2"},
       {:uuid, "~> 2.0", hex: :uuid_erl},
       {:jason, "~> 1.2"},
       {:ex_doc, "~> 0.24.2", only: :dev, runtime: false}
